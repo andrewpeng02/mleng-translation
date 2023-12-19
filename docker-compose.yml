@@ -1,0 +1,27 @@
+version: '3.3'
+
+services:
+  prefect_worker:
+    build: mleng-transformer-translation
+    volumes:
+      - ./mleng-transformer-translation/mlartifacts:/home/mleng-transformer-translation/mlartifacts
+      - ./mleng-transformer-translation/mlruns:/home/mleng-transformer-translation/mlruns
+      - ./mleng-transformer-translation/.prefect:/home/mleng-transformer-translation/.prefect
+    ports:
+      - 8000:8000
+      - 4200:4200
+    environment:
+      - TZ=America/New_York
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  backend:
+    build: backend-flask
+    ports:
+      - 9696:9696
+    depends_on: 
+      - prefect_worker

@@ -1,0 +1,11 @@
+transformer.pth
+.idea
+.DS_Store
+
+data
+__pycache__
+.pytest_cache
+mlruns
+output
+mlartifacts
+*.out

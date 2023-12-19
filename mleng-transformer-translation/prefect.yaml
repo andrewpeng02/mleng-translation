@@ -16,7 +16,7 @@ push: null
 pull:
 - prefect.deployments.steps.git_clone:
     repository: https://github.com/andrewpeng02/mleng-translation.git
-    branch: master
+    branch: main
     access_token: null
 - prefect.deployments.steps.set_working_directory:
     directory: mleng-transformer-translation

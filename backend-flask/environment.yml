@@ -2,6 +2,7 @@ name: backend-flask
 channels:
   - conda-forge
   - pytorch
+  - anaconda
   - defaults
 dependencies:
   - python=3.9
@@ -11,5 +12,5 @@ dependencies:
   - spacy
   - mlflow
   - einops
-  - defaults::nltk
+  - anaconda::nltk
 prefix: /home/andrew/anaconda3/envs/backend-flask

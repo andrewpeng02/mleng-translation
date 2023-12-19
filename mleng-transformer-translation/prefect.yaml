@@ -18,8 +18,6 @@ pull:
     repository: https://github.com/andrewpeng02/mleng-translation.git
     branch: main
     access_token: null
-- prefect.deployments.steps.set_working_directory:
-    directory: mleng-transformer-translation
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:

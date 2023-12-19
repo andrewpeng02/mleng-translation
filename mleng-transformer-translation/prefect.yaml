@@ -15,7 +15,7 @@ push: null
 # pull section allows you to provide instructions for cloning this project in remote locations
 pull:
 - prefect.deployments.steps.git_clone:
-    repository: https://github.com/andrewpeng02/mleng-transformer-translation.git
+    repository: https://github.com/andrewpeng02/mleng-translation.git
     branch: master
     access_token: null
 - prefect.deployments.steps.set_working_directory:

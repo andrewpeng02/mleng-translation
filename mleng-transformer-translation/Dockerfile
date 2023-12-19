@@ -57,7 +57,7 @@ COPY *.py .
 COPY prefect.yaml .
 
 RUN prefect work-pool create --type process my-pool
-RUN prefect deploy mleng-transformer-translation/orchestrate.py:main_flow -n deployment-v1 -p my-pool
+RUN prefect deploy -n deployment-v1
 RUN prefect config set PREFECT_API_URL=http://127.0.0.1:4200/api
 
 RUN mkdir logs

@@ -1,5 +1,7 @@
 import copy
+import os
 from pathlib import Path
+import time
 from einops import rearrange
 import numpy as np
 from tqdm import tqdm
@@ -76,18 +78,26 @@ def train_wrapper(kwargs):
     criterion = nn.CrossEntropyLoss(ignore_index=0)
     with mlflow.start_run(tags={"group_id": kwargs["group_id"]}):
         mlflow.log_params(kwargs)
-        mlflow.log_artifact(project_path + "/data/processed/en/train.pkl", "model/files/en")
-        mlflow.log_artifact(project_path + "/data/processed/en/val.pkl", "model/files/en")
+        mlflow.log_artifact(
+            project_path + "/data/processed/en/train.pkl", "model/files/en"
+        )
+        mlflow.log_artifact(
+            project_path + "/data/processed/en/val.pkl", "model/files/en"
+        )
         mlflow.log_artifact(
             project_path + "/data/processed/en/freq_list.pkl", "model/files/en"
         )
-        mlflow.log_artifact(project_path + "/data/processed/fr/train.pkl", "model/files/fr")
-        mlflow.log_artifact(project_path + "/data/processed/fr/val.pkl", "model/files/fr")
+        mlflow.log_artifact(
+            project_path + "/data/processed/fr/train.pkl", "model/files/fr"
+        )
+        mlflow.log_artifact(
+            project_path + "/data/processed/fr/val.pkl", "model/files/fr"
+        )
         mlflow.log_artifact(
             project_path + "/data/processed/fr/freq_list.pkl", "model/files/fr"
         )
 
-        train_losses, val_losses = train(
+        val_loss_final = train(
             train_loader,
             valid_loader,
             model,
@@ -96,12 +106,23 @@ def train_wrapper(kwargs):
             kwargs["num_epochs"],
             kwargs["device"],
             kwargs["trial"] if "trial" in kwargs else None,
+            kwargs["vocab_size"],
+            kwargs["max_seq_length"],
         )
-    return val_losses[-1][1]
+    return val_loss_final
 
 
 def train(
-    train_loader, valid_loader, model, optim, criterion, num_epochs, device, trial
+    train_loader,
+    valid_loader,
+    model,
+    optim,
+    criterion,
+    num_epochs,
+    device,
+    trial,
+    vocab_size,
+    max_seq_length,
 ):
     model.train()
 
@@ -186,15 +207,39 @@ def train(
             best_model = copy.deepcopy(model)
         print(f"Val Loss: {val_loss}")
 
-    model_compressed = compress_model(best_model)
+    best_model.eval().to("cpu")
+    model_quantized = torch.quantization.quantize_dynamic(
+        best_model, {torch.nn.Linear}, dtype=torch.qint8
+    )
+    model_compressed = compress_model(model_quantized, vocab_size, max_seq_length)
+    val_loss_final = time_model_evaluation(valid_loader, model_compressed, criterion, "cpu", trial, "Compressed model")
+
+    mlflow.log_metric("validation_loss_final", val_loss_final)
     mlflow.pytorch.log_model(model_compressed, "model")
-    return train_losses, val_losses
+    return val_loss_final
 
 
-def validate(valid_loader, model, criterion, device, trial):
+def get_size_of_model(model):
+    torch.save(model.state_dict(), "temp.p")
+    size = os.path.getsize("temp.p") / 1e6
+    os.remove("temp.p")
+    return int(size)
+
+
+def time_model_evaluation(valid_loader, model, criterion, device, trial, name):
+    st = time.time()
+    val_loss = validate(valid_loader, model, criterion, device, trial, False)
+    elapsed = time.time() - st
+    size = get_size_of_model(model)
+    print(f"{name}: Val loss {val_loss:.3f} \t Time {elapsed:.3f} \t Size (MB) {size}")
+    return val_loss
+
+
+def validate(valid_loader, model, criterion, device, trial, train_mode=True):
     if not trial:
         pbar = tqdm(total=len(iter(valid_loader)), leave=False)
-    model.eval()
+    if train_mode:
+        model.eval()
 
     total_loss = 0
     for src, src_key_padding_mask, tgt, tgt_key_padding_mask in iter(valid_loader):
@@ -229,13 +274,34 @@ def validate(valid_loader, model, criterion, device, trial):
 
     if not trial:
         pbar.close()
-    model.train()
+    if train_mode:
+        model.train()
     return total_loss / len(valid_loader)
 
 
-def compress_model(model):
-    model_scripted = torch.jit.script(model)
-    return model_scripted.to("cpu")
+def ids_tensor(shape, vocab_size, dtype):
+    #  Creates a random int32 tensor of the shape within the vocab size
+    return torch.randint(0, vocab_size, size=shape, dtype=dtype, device="cpu")
+
+
+def compress_model(model, vocab_size, max_seq_length):
+    src_ids = ids_tensor((1, max_seq_length), vocab_size, torch.int)
+    tgt_ids = ids_tensor((1, max_seq_length), vocab_size, torch.int)
+    src_key_padding_mask_ids = ids_tensor((1, max_seq_length), 2, torch.bool)
+    tgt_key_padding_mask_ids = ids_tensor((1, max_seq_length), 2, torch.bool)
+    memory_key_padding_mask_ids = ids_tensor((1, max_seq_length), 2, torch.bool)
+    tgt_mask = ids_tensor((max_seq_length, max_seq_length), 2, torch.bool)
+    dummy_input = (
+        src_ids,
+        tgt_ids,
+        src_key_padding_mask_ids,
+        tgt_key_padding_mask_ids,
+        memory_key_padding_mask_ids,
+        tgt_mask
+    )
+    traced_model = torch.jit.trace(model, dummy_input)
+    return traced_model
+
 
 def gen_nopeek_mask(length):
     """

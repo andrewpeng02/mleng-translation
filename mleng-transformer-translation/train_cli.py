@@ -35,9 +35,9 @@ def main(**kwargs):
             {
                 "nhead": 3,
                 "d_model": 4,
-                "num_encoder_layers": 6,
-                "num_decoder_layers": 6,
-                "dim_feedforward": 11,
+                "num_encoder_layers": 3,
+                "num_decoder_layers": 3,
+                "dim_feedforward": 10,
                 "pos_dropout": 0.1,
                 "trans_dropout": 0.1,
                 "n_warmup_steps": 5,

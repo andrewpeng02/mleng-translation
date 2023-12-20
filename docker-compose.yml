@@ -21,6 +21,8 @@ services:
               capabilities: [gpu]
   backend:
     build: backend-flask
+    environment:
+      - IN_DOCKER=true
     ports:
       - 9696:9696
     depends_on: 

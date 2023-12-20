@@ -1,16 +1,19 @@
+import os
 import pickle
 
 import spacy
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 import torch
 import mlflow
-from mlflow.entities import RunInfo
 
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-mlflow.set_tracking_uri("http://127.0.0.1:8000")
+if "IN_DOCKER" in os.environ and os.environ["IN_DOCKER"]:
+    mlflow.set_tracking_uri("http://prefect_worker:8000")
+else:
+    mlflow.set_tracking_uri("http://127.0.0.1:8000")
 client = mlflow.MlflowClient()
 
 

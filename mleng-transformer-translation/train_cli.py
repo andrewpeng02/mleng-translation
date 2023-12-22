@@ -1,4 +1,5 @@
 import click
+import mlflow
 import optuna
 
 from train import train_wrapper
@@ -26,8 +27,6 @@ def main(**kwargs):
         study = optuna.create_study(
             direction="minimize",
             pruner=optuna.pruners.SuccessiveHalvingPruner(),
-            storage="sqlite:///original_transformer.db",
-            load_if_exists=True,
         )
 
         # try default params first
@@ -70,4 +69,5 @@ def main(**kwargs):
 
 
 if __name__ == "__main__":
+    mlflow.set_tracking_uri("http://0.0.0.0:8000")
     main()

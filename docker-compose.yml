@@ -1,29 +1,43 @@
 version: '3.3'
 
 services:
-  prefect_worker:
-    build: mleng-transformer-translation
-    volumes:
-      - ./mleng-transformer-translation/mlartifacts:/home/mleng-transformer-translation/mlartifacts
-      - ./mleng-transformer-translation/mlruns:/home/mleng-transformer-translation/mlruns
-      - ./mleng-transformer-translation/.prefect:/home/mleng-transformer-translation/.prefect
+  mlflow:
+    build: mlflow
+    command: sh -c 'mlflow server --backend-store-uri $${BACKEND_URI} --default-artifact-root $${ARTIFACT_URI} --host 0.0.0.0 --port 8000'
     ports:
       - 8000:8000
-      - 4200:4200
     environment:
       - TZ=America/New_York
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    env_file: 
+      - .env
   backend:
     build: backend-flask
     environment:
       - IN_DOCKER=true
+      - PROMETHEUS_MULTIPROC_DIR=prometheus_multiproc_dir
+    env_file: 
+      - .env
     ports:
       - 9696:9696
+      - 9797:9797
     depends_on: 
-      - prefect_worker
+      - mlflow
+  example-prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - 9090:9090
+    volumes:
+      - ./backend-flask/monitoring-configs/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+  example-grafana:
+    image: grafana/grafana:latest
+    user: "472"
+    ports:
+      - 3000:3000
+    volumes:
+      - ./backend-flask/monitoring-configs/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./backend-flask/monitoring-configs/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./backend-flask/monitoring-configs/dashboards:/opt/grafana/dashboards
+    depends_on:
+      - example-prometheus

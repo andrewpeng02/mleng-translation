@@ -13,4 +13,9 @@ dependencies:
   - mlflow
   - einops
   - anaconda::nltk
+  - azure-identity 
+  - azure-storage-blob
+  - pip
+  - pip:
+    - prometheus-flask-exporter
 prefix: /home/andrew/anaconda3/envs/backend-flask

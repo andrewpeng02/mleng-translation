@@ -7,11 +7,13 @@ import torch
 import mlflow
 
 from flask import Flask, request, jsonify
+from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 
 app = Flask(__name__)
+metrics = GunicornPrometheusMetrics(app)
 
 if "IN_DOCKER" in os.environ and os.environ["IN_DOCKER"]:
-    mlflow.set_tracking_uri("http://prefect_worker:8000")
+    mlflow.set_tracking_uri("http://mlflow:8000")
 else:
     mlflow.set_tracking_uri("http://127.0.0.1:8000")
 client = mlflow.MlflowClient()

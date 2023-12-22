@@ -15,6 +15,7 @@ from dataset import ParallelLanguageDataset
 from model import LanguageTransformer
 
 import mlflow
+from mlflow.entities import Metric
 import optuna
 
 
@@ -76,7 +77,7 @@ def train_wrapper(kwargs):
 
     # Use cross entropy loss, ignoring any padding
     criterion = nn.CrossEntropyLoss(ignore_index=0)
-    with mlflow.start_run(tags={"group_id": kwargs["group_id"]}):
+    with mlflow.start_run(tags={"group_id": kwargs["group_id"]}) as run:
         mlflow.log_params(kwargs)
         mlflow.log_artifact(
             project_path + "/data/processed/en/train.pkl", "model/files/en"
@@ -108,6 +109,7 @@ def train_wrapper(kwargs):
             kwargs["trial"] if "trial" in kwargs else None,
             kwargs["vocab_size"],
             kwargs["max_seq_length"],
+            run.info.run_id,
         )
     return val_loss_final
 
@@ -123,6 +125,7 @@ def train(
     trial,
     vocab_size,
     max_seq_length,
+    run_id,
 ):
     model.train()
 
@@ -136,6 +139,7 @@ def train(
             pbar = tqdm(total=len(train_loader), leave=False)
         total_loss = 0
         mlflow.log_metric("epoch", epoch + 1, total_step)
+        log_batch_train_losses = []
 
         # Shuffle batches every epoch
         train_loader.dataset.shuffle_batches()
@@ -178,7 +182,14 @@ def train(
 
             total_loss += loss.item()
             train_losses.append((step, loss.item()))
-            mlflow.log_metric("train_loss", loss.item(), total_step)
+            log_batch_train_losses.append(
+                Metric(
+                    key="train_loss",
+                    value=loss.item(),
+                    step=total_step,
+                    timestamp=round(time.time() * 1000),
+                )
+            )
             if not trial:
                 pbar.update(1)
             if step == len(train_loader) - 1:
@@ -195,6 +206,8 @@ def train(
             pbar.close()
         val_loss = validate(valid_loader, model, criterion, device, trial)
         val_losses.append((total_step, val_loss))
+        mlflow.tracking.MlflowClient().log_batch(run_id, log_batch_train_losses)
+        log_batch_train_losses = []
         mlflow.log_metric("validation_loss", val_loss, total_step)
         if trial is not None:
             trial.report(val_loss, epoch)
@@ -212,7 +225,9 @@ def train(
         best_model, {torch.nn.Linear}, dtype=torch.qint8
     )
     model_compressed = compress_model(model_quantized, vocab_size, max_seq_length)
-    val_loss_final = time_model_evaluation(valid_loader, model_compressed, criterion, "cpu", trial, "Compressed model")
+    val_loss_final = time_model_evaluation(
+        valid_loader, model_compressed, criterion, "cpu", trial, "Compressed model"
+    )
 
     mlflow.log_metric("validation_loss_final", val_loss_final)
     mlflow.pytorch.log_model(model_compressed, "model")
@@ -297,7 +312,7 @@ def compress_model(model, vocab_size, max_seq_length):
         src_key_padding_mask_ids,
         tgt_key_padding_mask_ids,
         memory_key_padding_mask_ids,
-        tgt_mask
+        tgt_mask,
     )
     traced_model = torch.jit.trace(model, dummy_input)
     return traced_model

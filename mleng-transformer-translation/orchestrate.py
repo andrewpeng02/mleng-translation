@@ -97,7 +97,7 @@ def promote_best_model():
 
 @flow(log_prints=True)
 def main_flow():
-    mlflow.set_tracking_uri("http://127.0.0.1:8000")
+    mlflow.set_tracking_uri("http://0.0.0.0:8000")
     download_dataset()
     process_tatoeba_data_task()
     preprocess_data_task()

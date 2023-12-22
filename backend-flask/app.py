@@ -1,5 +1,6 @@
 import os
 import pickle
+import re
 
 import spacy
 from nltk.tokenize.treebank import TreebankWordDetokenizer
@@ -68,7 +69,7 @@ def predict_endpoint():
 
     req = request.get_json()
 
-    input = req["input"]
+    input = req["input"].strip()
     if input is None or len(input) == 0:
         return "Input must be a valid string", 400
 
@@ -77,6 +78,8 @@ def predict_endpoint():
     sentences = [sent.text for sent in doc.sents]
     if len(sentences) == 0:
         return "Input must be a valid string", 400
+    elif len(sentences) > 30:
+        return "Input contains too many sentences", 400
     sentences[-1] = (
         sentences[-1] + "."
         if sentences[-1][-1] not in {".", "!", "?"}
@@ -86,7 +89,11 @@ def predict_endpoint():
     # Generate output by sentence
     output = []
     for sentence in sentences:
-        pred = predict(sentence, model_data)
+        pred_result = predict(sentence, model_data)
+        if "error" in pred_result:
+            return pred_result["error"], 400
+
+        pred = pred_result["pred"]
         if len(pred) > 0:
             pred[0] = pred[0][0].upper() + pred[0][1:]
             output.extend(pred)
@@ -105,15 +112,21 @@ def predict_endpoint():
     return jsonify(result)
 
 
+max_seq_length = 96
+
+
 def predict(sentence, model_data):
     model = model_data["model"]
     fr_freq_list = model_data["fr_freq_list"]
     sentence = tokenize(sentence, model_data["en_freq_list"], model_data["lang_model"])
+    if len(sentence) > max_seq_length:
+        return {"error": "Sentence is too long"}
+    if percent_oov(sentence, model_data["en_freq_list"]["[OOV]"]) > 0.33:
+        return {"error": "Sentence contains too many invalid characters or words"}
 
     # Generate the translated sentence, feeding the model's output into its input
     translated_sentence = [fr_freq_list["[SOS]"]]
     i = 0
-    max_seq_length = 15
     while int(translated_sentence[-1]) != fr_freq_list["[EOS]"] and i < max_seq_length:
         output = forward_model(model, sentence, translated_sentence, "cpu").to("cpu")
         values, indices = torch.topk(output, 5)
@@ -122,7 +135,15 @@ def predict(sentence, model_data):
         i += 1
 
     # Return the translated sentence
-    return detokenize(translated_sentence, fr_freq_list)[1:-1]
+    return {"pred": detokenize(translated_sentence, fr_freq_list)[1:-1]}
+
+
+def percent_oov(tokenized_sentence, oov_token):
+    count_oov = 0
+    for token in tokenized_sentence:
+        if token == oov_token:
+            count_oov += 1
+    return count_oov / len(tokenized_sentence)
 
 
 def forward_model(model, src, tgt, device):

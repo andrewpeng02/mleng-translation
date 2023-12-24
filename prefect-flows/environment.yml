@@ -1,0 +1,15 @@
+name: prefect-flows
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - prefect
+  - numpy
+  - tqdm
+  - python=3.9
+  - azure-identity 
+  - sqlalchemy
+  - pip
+  - pip:
+    - pyodbc
+prefix: /home/andrew/anaconda3/envs/prefect-flows

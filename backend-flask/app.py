@@ -12,7 +12,7 @@ import mlflow
 from flask import Flask, request, jsonify
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 
-from db_helper import insert_into_model_execution, update_model_execution_output
+from shared.db_helper import insert_into_model_execution, update_model_execution_output
 
 app = Flask(__name__)
 metrics = GunicornPrometheusMetrics(app)

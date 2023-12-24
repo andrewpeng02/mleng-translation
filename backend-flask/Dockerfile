@@ -11,7 +11,7 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/truste
 WORKDIR /backend-flask
 
 # Create the environment
-COPY environment.yml .
+COPY backend-flask/environment.yml .
 RUN mamba env create -f environment.yml
 
 # Make RUN commands use the new environment:
@@ -21,5 +21,6 @@ RUN python -m spacy download en_core_web_sm
 RUN mkdir prometheus_multiproc_dir
 
 # Copy application
-COPY app.py db_helper.py gunicorn.conf.py .
+COPY backend-flask/app.py backend-flask/db_helper.py backend-flask/gunicorn.conf.py .
+COPY shared shared
 ENTRYPOINT ["mamba", "run", "--no-capture-output", "-n", "backend-flask", "gunicorn", "--bind=0.0.0.0:9696", "--workers=1", "--threads=1", "--timeout=120", "app:app"]

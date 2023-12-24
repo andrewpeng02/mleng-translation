@@ -11,7 +11,9 @@ services:
     env_file: 
       - .env
   backend:
-    build: backend-flask
+    build:
+      context: .
+      dockerfile: ./backend-flask/Dockerfile
     environment:
       - IN_DOCKER=true
       - PROMETHEUS_MULTIPROC_DIR=prometheus_multiproc_dir

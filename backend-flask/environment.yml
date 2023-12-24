@@ -15,7 +15,9 @@ dependencies:
   - anaconda::nltk
   - azure-identity 
   - azure-storage-blob
+  - sqlalchemy
   - pip
   - pip:
     - prometheus-flask-exporter
+    - pyodbc
 prefix: /home/andrew/anaconda3/envs/backend-flask

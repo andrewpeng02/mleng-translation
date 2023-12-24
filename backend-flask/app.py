@@ -1,6 +1,8 @@
 import os
 import pickle
 import re
+from threading import Thread
+import time
 
 import spacy
 from nltk.tokenize.treebank import TreebankWordDetokenizer
@@ -9,6 +11,8 @@ import mlflow
 
 from flask import Flask, request, jsonify
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
+
+from db_helper import insert_into_model_execution, update_model_execution_output
 
 app = Flask(__name__)
 metrics = GunicornPrometheusMetrics(app)
@@ -51,35 +55,53 @@ except:
     print("Model not found, please register a model in mlflow")
 
 
-@app.route("/api/predict", methods=["POST"])
-def predict_endpoint():
+def update_model_if_out_of_date():
     global model_data
-
     if (
-        model_data is None
-        or model_data["version"]
+        model_data["version"]
         != client.get_model_version_by_alias(
             "transformer-translation", "champion"
         ).version
     ):
+        model_data = load_best_model()
+
+
+def return_with_error(input, error):
+    Thread(
+        target=insert_into_model_execution, kwargs={"input": input, "error": error}
+    ).start()
+    return error, 400
+
+
+@app.route("/api/predict", methods=["POST"])
+def predict_endpoint():
+    st = time.time()
+    global model_data
+
+    if model_data is None:
         try:
             model_data = load_best_model()
         except Exception as e:
             return str(e), 500
 
-    req = request.get_json()
+    Thread(target=update_model_if_out_of_date).start()
 
-    input = req["input"].strip()
-    if input is None or len(input) == 0:
-        return "Input must be a valid string", 400
+    req = request.get_json()
+    if "input" not in req:
+        return return_with_error("", "Input must be a valid string")
+    orig_input = req["input"]
+
+    input = orig_input.strip()
+    if len(input) == 0:
+        return return_with_error(orig_input, "Input must be a valid string")
 
     # Split input by sentence
     doc = model_data["lang_model"](input)
     sentences = [sent.text for sent in doc.sents]
     if len(sentences) == 0:
-        return "Input must be a valid string", 400
+        return return_with_error(orig_input, "Input must be a valid string")
     elif len(sentences) > 30:
-        return "Input contains too many sentences", 400
+        return return_with_error(orig_input, "Input contains too many sentences")
     sentences[-1] = (
         sentences[-1] + "."
         if sentences[-1][-1] not in {".", "!", "?"}
@@ -91,7 +113,7 @@ def predict_endpoint():
     for sentence in sentences:
         pred_result = predict(sentence, model_data)
         if "error" in pred_result:
-            return pred_result["error"], 400
+            return return_with_error(orig_input, pred_result["error"])
 
         pred = pred_result["pred"]
         if len(pred) > 0:
@@ -107,8 +129,16 @@ def predict_endpoint():
         .replace(" .", ".")
         .replace(" !", "!")
     )
+    Thread(
+        target=insert_into_model_execution,
+        kwargs={"input": orig_input, "output": output_detokenized},
+    ).start()
 
-    result = {"output": output_detokenized, "version": model_data["version"]}
+    result = {
+        "output": output_detokenized,
+        "version": model_data["version"],
+        "time": str(time.time() - st),
+    }
     return jsonify(result)
 
 

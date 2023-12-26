@@ -21,6 +21,6 @@ RUN python -m spacy download en_core_web_sm
 RUN mkdir prometheus_multiproc_dir
 
 # Copy application
-COPY backend-flask/app.py backend-flask/db_helper.py backend-flask/gunicorn.conf.py .
+COPY backend-flask/app.py backend-flask/gunicorn.conf.py .
 COPY shared shared
 ENTRYPOINT ["mamba", "run", "--no-capture-output", "-n", "backend-flask", "gunicorn", "--bind=0.0.0.0:9696", "--workers=1", "--threads=1", "--timeout=120", "app:app"]

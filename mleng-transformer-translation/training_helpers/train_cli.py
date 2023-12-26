@@ -2,7 +2,7 @@ import click
 import mlflow
 import optuna
 
-from train import train_wrapper
+from training_helpers.train import train_wrapper
 
 
 @click.command()

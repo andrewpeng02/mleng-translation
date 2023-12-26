@@ -7,16 +7,14 @@ from pathlib import Path
 import spacy
 
 
-def main():
-    project_path = str(Path(__file__).resolve().parents[0])
+def main(eng_dataset, fra_dataset):
+    # project_path = str(Path(__file__).resolve().parents[0])
     punctuation = ["(", ")", ":", '"', " "]
     # Create the random train, validation, and test indices
-    train_indices, val_indices, test_indices = generate_indices(
-        len(load_data(project_path + "/data/raw/english.txt"))
-    )
+    train_indices, val_indices, test_indices = generate_indices(len(eng_dataset))
 
     process_lang_data(
-        project_path + "/data/raw/english.txt",
+        eng_dataset,
         "en",
         "en_core_web_sm",
         punctuation,
@@ -25,7 +23,7 @@ def main():
         test_indices,
     )
     process_lang_data(
-        project_path + "/data/raw/french.txt",
+        fra_dataset,
         "fr",
         "fr_core_news_sm",
         punctuation,
@@ -36,7 +34,7 @@ def main():
 
 
 def process_lang_data(
-    data_path,
+    lang_data,
     lang,
     spacy_pipeline,
     punctuation,
@@ -44,7 +42,6 @@ def process_lang_data(
     val_indices,
     test_indices,
 ):
-    lang_data = load_data(data_path)
     lang_model = spacy.load(spacy_pipeline, disable=["tagger", "parser", "ner"])
 
     # Tokenize the sentences
@@ -117,16 +114,19 @@ def process_sentences(lang_model, sentence, punctuation):
     return sentence
 
 
-def load_data(data_path):
-    data = []
-    with open(data_path) as fp:
-        for line in fp:
-            data.append(line.strip())
-    return data
+# def load_data(data_path):
+#     data = []
+#     with open(data_path) as fp:
+#         for line in fp:
+#             data.append(line.strip())
+#     return data
 
 
 def map_words(sentence, freq_list):
-    return [freq_list[word] if word in freq_list else freq_list["[OOV]"] for word in sentence ]
+    return [
+        freq_list[word] if word in freq_list else freq_list["[OOV]"]
+        for word in sentence
+    ]
 
 
 def generate_indices(data_len):

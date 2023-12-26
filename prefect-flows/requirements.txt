@@ -1,0 +1,6 @@
+prefect
+numpy
+tqdm
+azure-identity 
+sqlalchemy
+pyodbc

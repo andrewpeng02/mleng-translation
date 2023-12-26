@@ -11,10 +11,10 @@ def my_flow(name: str = "world"):
 
 if __name__ == "__main__":
     my_flow.deploy(
-        name="my-deployment", 
+        name="train-model", 
         work_pool_name="my-aci-pool",
         image=DeploymentImage(                                                 
-            name="prefect-flows:latest",
+            name="training-image:latest",
             platform="linux/amd64",
             dockerfile="Dockerfile"
         )                                                                      

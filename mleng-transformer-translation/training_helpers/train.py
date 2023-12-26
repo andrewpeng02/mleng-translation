@@ -7,12 +7,12 @@ import numpy as np
 from tqdm import tqdm
 
 from torch.optim import Adam
-from Optim import ScheduledOptim
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from dataset import ParallelLanguageDataset
-from model import LanguageTransformer
+from training_helpers.Optim import ScheduledOptim
+from training_helpers.dataset import ParallelLanguageDataset
+from training_helpers.model import LanguageTransformer
 
 import mlflow
 from mlflow.entities import Metric
@@ -20,7 +20,7 @@ import optuna
 
 
 def train_wrapper(kwargs):
-    project_path = str(Path(__file__).resolve().parents[0])
+    project_path = str(Path(__file__).resolve().parents[1])
 
     experiment_tags = {
         "mlflow.note.content": "This experiment contains the models for translating English to French sentences"

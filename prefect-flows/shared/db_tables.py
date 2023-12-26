@@ -11,7 +11,7 @@ class Base(DeclarativeBase):
 
 
 class ModelExecution(Base):
-    __tablename__ = "andrew_model_execution"
+    __tablename__ = "model_execution"
 
     id = Column(UNIQUEIDENTIFIER, primary_key=True, server_default=text("newid()"))
     timestamp = Column(DATETIME, server_default=text("CURRENT_TIMESTAMP"))
@@ -26,33 +26,23 @@ class ModelExecution(Base):
 
 
 class SourceEnum(enum.Enum):
-    tatoeba = 1
-    user = 2
+    tatoeba: 1
+    user: 2
 
 
 class DatasetSource(Base):
-    __tablename__ = "andrew_dataset_source"
+    __tablename__ = "dataset_source"
 
-    id: Mapped[int] = Column(
-        UNIQUEIDENTIFIER, primary_key=True, server_default=text("newid()")
-    )
+    id: Mapped[int] = mapped_column(primary_key=True)
     id_other: Mapped[str]
     source = Column(Enum(SourceEnum))
 
-    def __repr__(self) -> str:
-        return f"DatasetSource(id={self.id}, id_other={self.id_other}, source={self.source})"
-
 
 class Dataset(Base):
-    __tablename__ = "andrew_dataset"
+    __tablename__ = "dataset"
 
-    id: Mapped[int] = Column(
-        UNIQUEIDENTIFIER, primary_key=True, server_default=text("newid()")
-    )
-    source_id: Mapped[int] = mapped_column(ForeignKey("andrew_dataset_source.id", ondelete="CASCADE"))
-    timestamp = Column(DATETIME, server_default=text("CURRENT_TIMESTAMP"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_id: Mapped[int] = mapped_column(ForeignKey("dataset_source.id"))
+    timestamp: Mapped[int]
     english: Mapped[str]
     french: Mapped[str]
-
-    def __repr__(self) -> str:
-        return f"Dataset(id={self.id}, source_id={self.source_id}, timestamp={self.timestamp}, english={self.english}, french={self.french})"

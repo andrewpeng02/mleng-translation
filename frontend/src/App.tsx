@@ -63,9 +63,20 @@ function App() {
               maxRows={30}
               onChange={(e) => setUserInput(e.target.value)}
               autoComplete="off"
-              className="resize-none border border-slate-400 bg-white rounded-lg p-2 w-full"
+              autoFocus={true}
+              className={
+                "resize-none border bg-white rounded-lg p-2 w-full" +
+                (error ? " border-red-500" : " border-slate-400")
+              }
             />
-            {error && <p>{error.message}</p>}
+            <p
+              className={
+                "border rounded-lg p-2 border-red-500 bg-red-200" +
+                (error ? "" : " hidden")
+              }
+            >
+              {error ? error.message : "This is a placeholder error"}
+            </p>
           </div>
           <div>
             <p className="mb-2">French</p>
@@ -84,6 +95,10 @@ function App() {
             </div>
           </div>
         </div>
+      </div>
+      <div className="m-4 mt-8 p-4 bg-white rounded-lg">
+        <p className="mb-1 text-lg">Features</p>
+        <p className="text-sm">This English to French translation tool uses a Transformer model implemented in Pytorch</p>
       </div>
     </div>
   );

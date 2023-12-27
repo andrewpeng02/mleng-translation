@@ -14,7 +14,7 @@ from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 
 from shared.db_helper import insert_into_model_execution, update_model_execution_output
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="dist", static_url_path="/")
 metrics = GunicornPrometheusMetrics(app)
 
 if "IN_DOCKER" in os.environ and os.environ["IN_DOCKER"]:
@@ -72,6 +72,9 @@ def return_with_error(input, error):
     ).start()
     return {"error": error}, 400
 
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
 
 @app.route("/api/predict", methods=["POST"])
 def predict_endpoint():

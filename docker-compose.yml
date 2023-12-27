@@ -19,11 +19,18 @@ services:
       - PROMETHEUS_MULTIPROC_DIR=prometheus_multiproc_dir
     env_file: 
       - .env
-    ports:
+    expose:
       - 9696:9696
+    ports:
       - 9797:9797
     depends_on: 
       - mlflow
+  nginx:
+    build: ./nginx
+    ports:
+      - 1337:80
+    depends_on:
+      - backend
   example-prometheus:
     image: prom/prometheus:latest
     ports:

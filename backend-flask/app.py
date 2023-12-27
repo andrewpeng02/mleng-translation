@@ -70,7 +70,7 @@ def return_with_error(input, error):
     Thread(
         target=insert_into_model_execution, kwargs={"input": input, "error": error}
     ).start()
-    return error, 400
+    return {"error": error}, 400
 
 
 @app.route("/api/predict", methods=["POST"])
@@ -94,6 +94,8 @@ def predict_endpoint():
     input = orig_input.strip()
     if len(input) == 0:
         return return_with_error(orig_input, "Input must be a valid string")
+    if len(input) > 3000:
+        return return_with_error(orig_input, "Input must have 3000 characters or fewer")
 
     # Split input by sentence
     doc = model_data["lang_model"](input)

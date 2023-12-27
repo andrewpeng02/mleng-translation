@@ -15,11 +15,11 @@ class ModelExecution(Base):
 
     id = Column(UNIQUEIDENTIFIER, primary_key=True, server_default=text("newid()"))
     timestamp = Column(DATETIME, server_default=text("CURRENT_TIMESTAMP"))
-    input: Mapped[str] = mapped_column(String(2000))
-    output: Mapped[Optional[str]] = mapped_column(String(2000))
+    input: Mapped[str] = mapped_column(String(5000))
+    output: Mapped[Optional[str]] = mapped_column(String(5000))
     error: Mapped[Optional[str]]
-    label: Mapped[Optional[str]] = mapped_column(String(2000))
-    user_label: Mapped[Optional[str]] = mapped_column(String(2000))
+    label: Mapped[Optional[str]] = mapped_column(String(5000))
+    user_label: Mapped[Optional[str]] = mapped_column(String(5000))
 
     def __repr__(self) -> str:
         return f"ModelExecution(id={self.id}, timestamp={self.timestamp}, input={self.input}, output={self.output}, label={self.label}, user_label={self.user_label})"

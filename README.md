@@ -6,7 +6,9 @@ To deploy the app, ensure Docker and Docker Compose are installed. Clone the rep
 - `BACKEND_URI` and `ARTIFACT_URI` passed to mlflow
 - `AZURE_STORAGE_ACCESS_KEY` and `AZURE_STORAGE_CONNECTION_STRING` also passed to mlflow, optional if not using azure
 - `AZURE_SQL_CONNECTIONSTRING` passed to the app and prefect flows to keep track of the dataset and logging, can pass any connection string 
-Then, run `docker compose up` and the app should be available at port 80, grafana at port 3000, and mlflow at port 8000
+
+Set up ssl by running `sudo ./init-letsencrypt.sh`, ensuring you have the correct domain name in `init-letsencrypt.sh` and `nginx/nginx.conf`.
+Then, run `docker compose down && docker compose up -d` and the app should be available at port 443, grafana at port 3000, and mlflow at port 8000
 
 ### Deploying the Prefect flows
 The Prefect flows are separated into two groups based on if it requires a GPU or not. 

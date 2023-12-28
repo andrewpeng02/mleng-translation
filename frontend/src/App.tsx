@@ -6,6 +6,7 @@ import {
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
+import { MdFeedback } from "react-icons/md";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,8 @@ function AppWrapper() {
 function App() {
   const [userInput, setUserInput] = useState<string>("");
   const debouncedUserInput = useDebounce<string>(userInput, 250);
+  const [feedbackMode, setFeedbackMode] = useState<bool>(false);
+  const [feedbackModeInput, setFeedbackModeInput] = useState<string>("");
   const { isFetching, error, data, refetch } = useQuery({
     enabled: false,
     retry: false,
@@ -92,6 +95,11 @@ function App() {
                   (isLoading ? " animate-loading-pulsate" : "")
                 }
               />
+              {feedbackMode ? <div>
+                
+              </div> : <div className="absolute bottom-2 right-2">
+                <MdFeedback size="20"/>}
+              </div>
             </div>
           </div>
         </div>

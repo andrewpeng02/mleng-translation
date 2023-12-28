@@ -30,4 +30,4 @@ RUN mkdir prometheus_multiproc_dir
 COPY backend-flask/app.py backend-flask/gunicorn.conf.py .
 COPY shared shared
 COPY --from=frontend_build /frontend/dist dist
-ENTRYPOINT ["mamba", "run", "--no-capture-output", "-n", "backend-flask", "gunicorn", "--bind=0.0.0.0:9696", "--workers=1", "--threads=1", "--timeout=120", "app:app"]
+ENTRYPOINT ["mamba", "run", "--no-capture-output", "-n", "backend-flask", "gunicorn", "--bind=0.0.0.0:9696", "--workers=2", "--threads=1", "--timeout=120", "app:app"]

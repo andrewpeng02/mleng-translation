@@ -11,11 +11,19 @@ import mlflow
 
 from flask import Flask, request, jsonify
 from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from shared.db_helper import insert_into_model_execution, update_model_execution_output
 
 app = Flask(__name__, static_folder="dist", static_url_path="/")
 metrics = GunicornPrometheusMetrics(app)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["2000 per day", "1000 per hour", "200 per minute"],
+    storage_uri="memory://",
+)
 
 if "IN_DOCKER" in os.environ and os.environ["IN_DOCKER"]:
     mlflow.set_tracking_uri("http://mlflow:8000")

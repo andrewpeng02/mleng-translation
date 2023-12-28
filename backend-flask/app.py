@@ -1,6 +1,6 @@
 import os
 import pickle
-import re
+import uuid
 from threading import Thread
 import time
 
@@ -14,7 +14,10 @@ from prometheus_flask_exporter.multiprocess import GunicornPrometheusMetrics
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
-from shared.db_helper import insert_into_model_execution, update_model_execution_output
+from shared.db_helper import (
+    insert_into_model_execution,
+    update_model_execution_user_label,
+)
 
 app = Flask(__name__, static_folder="dist", static_url_path="/")
 metrics = GunicornPrometheusMetrics(app)
@@ -80,9 +83,29 @@ def return_with_error(input, error):
     ).start()
     return {"error": error}, 400
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    return app.send_static_file('index.html')
+    return app.send_static_file("index.html")
+
+
+@app.route("/api/feedback", methods=["POST"])
+def feedback_endpoint():
+    req = request.get_json()
+    if "id" not in req:
+        return {"error": "Must contain id field"}, 400
+    if "feedback" not in req or len(req["feedback"]) == 0:
+        return {"error": "Must contain feedback field"}, 400
+    id = req["id"]
+    feedback = req["feedback"]
+    
+    Thread(
+        target=update_model_execution_user_label,
+        kwargs={"id": id, "user_label": feedback},
+    ).start()
+
+    return {"status": "success"}, 201
+
 
 @app.route("/api/predict", methods=["POST"])
 def predict_endpoint():
@@ -142,12 +165,14 @@ def predict_endpoint():
         .replace(" .", ".")
         .replace(" !", "!")
     )
+    id = uuid.uuid4()
     Thread(
         target=insert_into_model_execution,
-        kwargs={"input": orig_input, "output": output_detokenized},
+        kwargs={"id": id, "input": orig_input, "output": output_detokenized},
     ).start()
 
     result = {
+        "id": id,
         "output": output_detokenized,
         "version": model_data["version"],
         "time": str(time.time() - st),

@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDebounce } from "@uidotdev/usehooks";
 import ReactTextareaAutosize from "react-textarea-autosize";
 import {
   QueryClient,
   QueryClientProvider,
+  useMutation,
   useQuery,
 } from "@tanstack/react-query";
+
 import { MdFeedback } from "react-icons/md";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const queryClient = new QueryClient();
 
@@ -21,7 +25,7 @@ function AppWrapper() {
 function App() {
   const [userInput, setUserInput] = useState<string>("");
   const debouncedUserInput = useDebounce<string>(userInput, 250);
-  const [feedbackMode, setFeedbackMode] = useState<bool>(false);
+  const [feedbackMode, setFeedbackMode] = useState<boolean>(false);
   const [feedbackModeInput, setFeedbackModeInput] = useState<string>("");
   const { isFetching, error, data, refetch } = useQuery({
     enabled: false,
@@ -43,6 +47,30 @@ function App() {
       return resJson;
     },
   });
+  const updateFeedbackMutation = useMutation({
+    mutationFn: async (feedback: { id: string; feedback: string }) => {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(feedback),
+      });
+      const resJson = await res.json();
+      if (!res.ok) throw new Error(resJson.error);
+      return resJson;
+    },
+    onSuccess: () => {
+      toast.success("Successfully submitted feedback!");
+      setFeedbackMode(false);
+    },
+  });
+  useEffect(() => {
+    if (updateFeedbackMutation.error) {
+      toast.error(updateFeedbackMutation.error.message);
+    }
+  }, [updateFeedbackMutation.error]);
 
   useEffect(() => {
     if (debouncedUserInput) {
@@ -50,6 +78,10 @@ function App() {
     }
   }, [refetch, debouncedUserInput]);
   const isLoading = debouncedUserInput && isFetching;
+  const showFeedbackMode = data && data.output && feedbackMode;
+  if (!debouncedUserInput && data && data.output) {
+    data.output = "";
+  }
 
   return (
     <div className="bg-slate-100 h-screen">
@@ -67,6 +99,7 @@ function App() {
               onChange={(e) => setUserInput(e.target.value)}
               autoComplete="off"
               autoFocus={true}
+              disabled={feedbackMode}
               className={
                 "resize-none border bg-white rounded-lg p-2 w-full" +
                 (error ? " border-red-500" : " border-slate-400")
@@ -85,22 +118,67 @@ function App() {
             <p className="mb-2">French</p>
             <div className="relative">
               <ReactTextareaAutosize
-                value={data && data.output ? data.output : ""}
+                value={
+                  data && data.output
+                    ? feedbackMode
+                      ? feedbackModeInput
+                      : data.output
+                    : ""
+                }
+                onChange={(e) => {
+                  if (showFeedbackMode) {
+                    setFeedbackModeInput(e.target.value);
+                  }
+                }}
                 minRows={10}
                 maxRows={30}
-                disabled
+                disabled={!feedbackMode}
                 autoComplete="off"
                 className={
                   "resize-none border border-slate-400 bg-slate-200 rounded-lg p-2 w-full" +
                   (isLoading ? " animate-loading-pulsate" : "")
                 }
               />
-              {feedbackMode ? <div>
-                
-              </div> : <div className="absolute bottom-2 right-2">
-                <MdFeedback size="20"/>}
-              </div>
+              {showFeedbackMode ? (
+                <div className="absolute bottom-4 right-2 ">
+                  <button
+                    className="mr-4 bg-slate-300 p-2 rounded-md"
+                    onClick={() => setFeedbackMode(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="text-blue-600 bg-slate-300 p-2 rounded-md"
+                    onClick={() => {
+                      updateFeedbackMutation.mutate({
+                        id: data.id,
+                        feedback: feedbackModeInput,
+                      });
+                    }}
+                  >
+                    Submit
+                  </button>
+                </div>
+              ) : (
+                <div className="absolute bottom-2 right-2">
+                  <button
+                    onClick={() => {
+                      setFeedbackMode(true);
+                      setFeedbackModeInput(data.output);
+                    }}
+                  >
+                    <MdFeedback size="20" />
+                  </button>
+                </div>
+              )}
             </div>
+            {showFeedbackMode && (
+              <p className="text-sm bg-slate-300 rounded-lg p-2">
+                Submit an improved translation so that all users can benefit
+                from a better experience. The feedback will be reviewed and make
+                the translator better.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -150,6 +228,7 @@ function App() {
           </li>
         </ul>
       </div>
+      <ToastContainer />
     </div>
   );
 }

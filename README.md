@@ -18,7 +18,16 @@ The code is located in mleng-transformer-translation, and requires:
 - GPU with >16gb of ram (alternatively, reduce num_tokens)
 - Make sure cuda version >= 11.8 is installed on host machine
 - Make sure docker and nvidia container toolkit is installed on host machine (https://docs.docker.com/config/containers/resource_constraints/#gpu)
-- To deploy, ... 
+- To deploy, follow these steps
+
+Set up once:
+1. Log in to Prefect Cloud and provision a serverless push work pool (https://docs.prefect.io/latest/guides/deployment/push-work-pools/)
+2. Install Azure CLI, `az login`, and `az acr login --name [NAME OF CONTAINER REGISTRY]`
+3. `conda env create -f environment.yml`
+To deploy as much as you want:
+4. `conda activate mleng-transformer-translation`
+5. `cd mleng-transformer-translation`
+6. `python3 orchestrate.py`` with `AZURE_SQL_CONNECTIONSTRING` as an environment variable
 
 ### Other flows
 The code is located in prefect-flows, and consist of ...

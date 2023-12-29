@@ -15,4 +15,7 @@ dependencies:
   - einops
   - pytorch-cuda=11.8
   - pytorch
+  - pip
+  - pip:
+    - pyodbc
 prefix: /home/andrew/anaconda3/envs/mleng-transformer-translation

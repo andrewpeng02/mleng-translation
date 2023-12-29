@@ -7,6 +7,7 @@ from datetime import timedelta
 import mlflow
 from mlflow.entities import Run
 from prefect import flow, task, runtime
+from prefect.deployments import DeploymentImage
 import great_expectations as gx
 import pandas as pd
 
@@ -163,7 +164,16 @@ def main_flow():
 
 
 if __name__ == "__main__":
-    # if os.path.isdir("shared"):
-    #     shutil.rmtree("shared")
-    # shutil.copytree("../shared", "shared")
-    main_flow()
+    if os.path.isdir("shared"):
+        shutil.rmtree("shared")
+    shutil.copytree("../shared", "shared")
+    # main_flow()
+    main_flow.deploy(
+        name="train-model",
+        work_pool_name="my-aci-pool",
+        image=DeploymentImage(
+            name="training-image:latest",
+            platform="linux/amd64",
+            dockerfile="Dockerfile",
+        ),
+    )

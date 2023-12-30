@@ -8,7 +8,7 @@ from shared.db_tables import Base, ModelExecution, Dataset, DatasetSource, Sourc
 
 params = urllib.parse.quote_plus(os.environ["AZURE_SQL_CONNECTIONSTRING"])
 connection_string = "mssql+pyodbc:///?odbc_connect={}".format(params)
-engine = create_engine(connection_string)  # , echo=True)
+engine = create_engine(connection_string, pool_timeout=120)  # , echo=True)
 
 
 def insert_into_model_execution(**kwargs):

@@ -156,7 +156,9 @@ def promote_best_model():
 
 @flow(log_prints=True)
 def main_flow():
-    mlflow.set_tracking_uri("http://0.0.0.0:8000")
+    # mlflow.set_tracking_uri("http://0.0.0.0:8000")
+    if "BACKEND_URI" in os.environ:
+        mlflow.set_tracking_uri(os.environ["BACKEND_URI"])
     eng_dataset, fra_dataset = retrieve_dataset()
     preprocess_data_task(eng_dataset, fra_dataset)
     train_and_optimize()

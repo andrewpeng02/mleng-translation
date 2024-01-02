@@ -7,6 +7,7 @@ import time
 import spacy
 from nltk.tokenize.treebank import TreebankWordDetokenizer
 import torch
+import numpy as np
 import mlflow
 
 from flask import Flask, request, jsonify
@@ -40,8 +41,16 @@ def load_best_model():
     version = client.get_model_version_by_alias(
         "transformer-translation", "champion"
     ).version
+    run_id = client.get_model_version_by_alias(
+        "transformer-translation", "champion"
+    ).run_id
     model_path = mlflow.artifacts.download_artifacts(model_uri, dst_path="model")
     model = torch.jit.load(model_path + "data/model.pth")
+
+    # data_drift_model_path = mlflow.artifacts.download_artifacts(
+    #     run_id=run_id, artifact_path="detector", dst_path="detector"
+    # )
+    # data_drift_model = load_detector(data_drift_model_path)
 
     lang_model = spacy.load("en_core_web_sm")
     with open(model_path + "files/en/freq_list.pkl", "rb") as f:
@@ -52,6 +61,7 @@ def load_best_model():
     model.eval()
     return {
         "model": model,
+        # "data_drift_model": data_drift_model,
         "lang_model": lang_model,
         "en_freq_list": en_freq_list,
         "fr_freq_list": fr_freq_list,
@@ -77,9 +87,10 @@ def update_model_if_out_of_date():
         model_data = load_best_model()
 
 
-def return_with_error(input, error):
+def return_with_error(input, error, id):
     Thread(
-        target=insert_into_model_execution, kwargs={"input": input, "error": error}
+        target=insert_into_model_execution,
+        kwargs={"id": id, "input": input, "error": error},
     ).start()
     return {"error": error}, 400
 
@@ -98,7 +109,7 @@ def feedback_endpoint():
         return {"error": "Must contain feedback field"}, 400
     id = req["id"]
     feedback = req["feedback"]
-    
+
     Thread(
         target=update_model_execution_user_label,
         kwargs={"id": id, "user_label": feedback},
@@ -145,11 +156,12 @@ def predict_endpoint():
     )
 
     # Generate output by sentence
+    id = uuid.uuid4()
     output = []
     for sentence in sentences:
-        pred_result = predict(sentence, model_data)
+        pred_result = predict(sentence, model_data, id)
         if "error" in pred_result:
-            return return_with_error(orig_input, pred_result["error"])
+            return return_with_error(orig_input, pred_result["error"], id)
 
         pred = pred_result["pred"]
         if len(pred) > 0:
@@ -165,7 +177,6 @@ def predict_endpoint():
         .replace(" .", ".")
         .replace(" !", "!")
     )
-    id = uuid.uuid4()
     Thread(
         target=insert_into_model_execution,
         kwargs={"id": id, "input": orig_input, "output": output_detokenized},
@@ -183,7 +194,7 @@ def predict_endpoint():
 max_seq_length = 96
 
 
-def predict(sentence, model_data):
+def predict(sentence, model_data, id):
     model = model_data["model"]
     fr_freq_list = model_data["fr_freq_list"]
     sentence = tokenize(sentence, model_data["en_freq_list"], model_data["lang_model"])
@@ -191,6 +202,9 @@ def predict(sentence, model_data):
         return {"error": "Sentence is too long"}
     if percent_oov(sentence, model_data["en_freq_list"]["[OOV]"]) > 0.33:
         return {"error": "Sentence contains too many invalid characters or words"}
+
+    # Detect data drift
+    # data_drift_detection(sentence, id)
 
     # Generate the translated sentence, feeding the model's output into its input
     translated_sentence = [fr_freq_list["[SOS]"]]
@@ -204,6 +218,14 @@ def predict(sentence, model_data):
 
     # Return the translated sentence
     return {"pred": detokenize(translated_sentence, fr_freq_list)[1:-1]}
+
+
+def data_drift_detection(sentence, id):
+    data_drift_model = model_data["data_drift_model"]
+
+    preds = data_drift_model.predict(np.array(sentence), return_test_stat=True)
+    if preds["data"]["is_drift"]:
+        app.logger.error(f"Data drift detected! ID {id}")
 
 
 def percent_oov(tokenized_sentence, oov_token):

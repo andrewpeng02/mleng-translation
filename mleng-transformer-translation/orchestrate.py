@@ -178,4 +178,5 @@ if __name__ == "__main__":
             platform="linux/amd64",
             dockerfile="Dockerfile",
         ),
+        push=False
     )

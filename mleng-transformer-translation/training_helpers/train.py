@@ -1,4 +1,5 @@
 import copy
+from functools import partial
 import os
 from pathlib import Path
 import time
@@ -12,7 +13,11 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from training_helpers.Optim import ScheduledOptim
 from training_helpers.dataset import ParallelLanguageDataset
-from training_helpers.model import LanguageTransformer
+from training_helpers.model import LanguageTransformer, LanguageTransformerEncoder
+
+from alibi_detect.cd import MMDDriftOnline
+from alibi_detect.cd.pytorch import preprocess_drift, UAE
+from alibi_detect.saving import save_detector
 
 import mlflow
 from mlflow.entities import Metric
@@ -98,7 +103,7 @@ def train_wrapper(kwargs):
             project_path + "/data/processed/fr/freq_list.pkl", "model/files/fr"
         )
 
-        val_loss_final = train(
+        val_loss_final, best_model = train(
             train_loader,
             valid_loader,
             model,
@@ -110,6 +115,10 @@ def train_wrapper(kwargs):
             kwargs["vocab_size"],
             kwargs["max_seq_length"],
             run.info.run_id,
+        )
+
+        train_data_drift_model(
+            best_model, train_dataset, kwargs["max_seq_length"], kwargs["device"]
         )
     return val_loss_final
 
@@ -230,8 +239,9 @@ def train(
     )
 
     mlflow.log_metric("validation_loss_final", val_loss_final)
+    mlflow.pytorch.log_model(best_model, "model_orig")
     mlflow.pytorch.log_model(model_compressed, "model")
-    return val_loss_final
+    return val_loss_final, best_model
 
 
 def get_size_of_model(model):
@@ -331,3 +341,32 @@ def gen_nopeek_mask(length):
     mask = rearrange(torch.triu(torch.ones(length, length)) == 0, "h w -> w h")
 
     return mask
+
+
+def train_data_drift_model(model, train_dataset, max_seq_len, device):
+    model_encoder = LanguageTransformerEncoder(model)
+    embed_src = model.embed_src
+    enc_dim = 32
+    shape = (
+        max_seq_len,
+        embed_src.embedding_dim,
+    )
+
+    uae = UAE(input_layer=model_encoder, shape=shape, enc_dim=enc_dim)
+    uae.to("cuda")
+
+    X_ref = torch.IntTensor(train_dataset.data_1)
+    idx = torch.randperm(X_ref.size(0))
+    preprocess_fn = partial(
+        preprocess_drift, model=uae, max_len=max_seq_len, batch_size=1000, device="cuda"
+    )
+    cd = MMDDriftOnline(
+        X_ref[idx[:10000]],
+        ert=200,
+        window_size=50,
+        preprocess_fn=preprocess_fn,
+        backend="pytorch",
+        input_shape=(max_seq_len,),
+    )
+    save_detector(cd, "detector")
+    # mlflow.log_artifact("detector", "data_drift_model")

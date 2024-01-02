@@ -12,7 +12,7 @@ RUN curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/t
     && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc \
     && sudo apt-get install -y unixodbc-dev
     
-RUN pip install prefect mlflow optuna spacy numpy tqdm einops azure-storage-blob azure-identity great_expectations pyodbc
+RUN pip install prefect mlflow optuna spacy numpy tqdm einops azure-storage-blob azure-identity great_expectations pyodbc alibi-detect[pytorch]
 RUN python -m spacy download en_core_web_sm
 RUN python -m spacy download fr_core_news_sm
 

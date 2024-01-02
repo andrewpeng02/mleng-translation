@@ -15,8 +15,12 @@ dependencies:
   - einops
   - pytorch-cuda=11.8
   - pytorch
+  - pydantic<2
   - pip
   - pip:
+    - azure-storage-blob
+    - azure-identity
+    - alibi-detect[pytorch]
     - pyodbc
     - great_expectations
 prefix: /home/andrew/anaconda3/envs/mleng-transformer-translation

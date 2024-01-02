@@ -81,6 +81,26 @@ class LanguageTransformer(nn.Module):
         return self.fc(output)
 
 
+class LanguageTransformerEncoder(nn.Module):
+    def __init__(self, model: LanguageTransformer):
+        super().__init__()
+        self.d_model = model.d_model
+        self.embed_src = model.embed_src
+        self.pos_enc = model.pos_enc
+        self.encoder = model.transformer.encoder
+
+    def forward(self, src):
+        src_key_padding_mask = torch.where(src > 0, False, True)
+        if isinstance(src, list):
+            src = src[0].unsqueeze(0)
+
+        src = torch.transpose(src, 0, 1)
+        src = self.pos_enc(self.embed_src(src) * math.sqrt(self.d_model))
+        output = self.encoder(src, src_key_padding_mask=src_key_padding_mask)
+        output = torch.transpose(output, 0, 1)
+        return output
+
+
 # Source: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=100):

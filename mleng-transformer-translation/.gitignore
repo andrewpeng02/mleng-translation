@@ -9,3 +9,4 @@ mlruns
 output
 mlartifacts
 *.out
+detector

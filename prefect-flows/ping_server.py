@@ -21,9 +21,15 @@ def main_flow():
     assert test_data["output"] == "Salut."
 
     client = mlflow.MlflowClient()
-    version = client.get_model_version_by_alias(
-        "transformer-translation", "champion"
-    )
+    try:
+        version = client.get_model_version_by_alias(
+            "transformer-translation", "champion"
+        )
+    except:
+        # retry
+        version = client.get_model_version_by_alias(
+            "transformer-translation", "champion"
+        )
 
     # model should be updated in 1.5hr since last trained
     if time.time() - version.creation_timestamp / 1000 > 60*90:

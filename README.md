@@ -1,3 +1,30 @@
+# mleng-translation
+Live demo [here](https://translate.andrewpeng.dev)!
+
+This is an English to French translation application powered by a deep learning model. It consists of the full stack application, the model, the training pipeline, and monitoring and observability:
+
+![Architecture diagram](readme-files/Architecture%20Diagram.png)
+*Architecture diagram*
+
+- Full stack application
+  - Users can access the website and recieve a translation in under 200ms, as well as give feedback on the translation
+  - The underlying model automatically updates when a new version is available on the MLFlow server, training on new data
+  - The technologies used includes React + tailwind for the frontend and Flask for the backend
+  - Deployed on an Azure VM using Docker Compose, which uses a backend service, an MLFlow service, an nginx service, certbot for automatic SSL renewal, and Promethius + Grafana services
+  - Grafana dashboard allows the admin to see average latency, endpoint usage, error reports, and more
+  - Endpoint output is logged in a SQL table along with the model version, so that poor model outputs or errors can easily be traced back
+- Model
+  - The model is a sequence-to-sequence Transformer model trained in PyTorch
+  - The model is also quantized and converted to JIT to reduce the latency, memory, and computational requirements
+  - The data is pulled from a dataset SQL table, and most of the data originated from Tatoeba
+- Training pipeline
+  - The pipeline automatically trains and deploys the model to the backend without human intervention!
+  - It fetches the newest version of the dataset from the SQL table, preprocesses it, trains the model, uploads the metrics and quantized model to MLFlow, and promotes it to production if the validation loss meets certain criteria
+  - Pipeline was created using Prefect, and automatically runs every week
+- Prefect flows
+  - Another prefect flow includes `ping-server`, which ensures the server is up and runs smoke tests on the server every hour
+  - If the server is down or a test doesn't pass, Prefect sends an email to me with the flow run information
+
 ## How to deploy to production
 This project requires deploying the app and Prefect flows separately.
 

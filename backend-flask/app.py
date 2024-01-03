@@ -143,7 +143,6 @@ def predict_endpoint():
     input = orig_input.strip()
     if len(input) == 0:
         result = {
-            "id": id,
             "output": "",
             "version": model_data["version"],
             "last_updated": model_data["last_updated"],

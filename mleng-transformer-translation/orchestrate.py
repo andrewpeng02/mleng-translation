@@ -10,6 +10,8 @@ from prefect import flow, task, runtime
 from prefect.deployments import DeploymentImage
 import great_expectations as gx
 import pandas as pd
+from dotenv import load_dotenv
+load_dotenv("../.env")
 
 from training_helpers import process_tatoeba_data
 from training_helpers import preprocess_data
@@ -157,8 +159,8 @@ def promote_best_model():
 @flow(log_prints=True)
 def main_flow():
     # mlflow.set_tracking_uri("http://0.0.0.0:8000")
-    if "BACKEND_URI" in os.environ:
-        mlflow.set_tracking_uri(os.environ["BACKEND_URI"])
+    if "TRACKING_URI" in os.environ:
+        mlflow.set_tracking_uri(os.environ["TRACKING_URI"])
     eng_dataset, fra_dataset = retrieve_dataset()
     preprocess_data_task(eng_dataset, fra_dataset)
     train_and_optimize()
@@ -170,13 +172,14 @@ if __name__ == "__main__":
         shutil.rmtree("shared")
     shutil.copytree("../shared", "shared")
     # main_flow()
-    main_flow.deploy(
-        name="train-model",
-        work_pool_name="my-aci-pool",
-        image=DeploymentImage(
-            name="training-image:latest",
-            platform="linux/amd64",
-            dockerfile="Dockerfile",
-        ),
-        push=False
-    )
+    # main_flow.deploy(
+    #     name="train-model",
+    #     work_pool_name="my-aci-pool",
+    #     image=DeploymentImage(
+    #         name="training-image:latest",
+    #         platform="linux/amd64",
+    #         dockerfile="Dockerfile",
+    #     ),
+    #     push=False
+    # )
+    main_flow.serve(name="train-process", interval=60*60*24*7)

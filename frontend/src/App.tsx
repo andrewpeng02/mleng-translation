@@ -183,6 +183,12 @@ function App() {
         </div>
       </div>
       <div className="m-4 mt-8 p-4 bg-white rounded-lg">
+        <p className="text-md italic">
+          Last updated:{" "}
+          {data && data.last_updated
+            ? new Date(data.last_updated * 1000).toLocaleString()
+            : "..."}
+        </p>
         <p className="text-md">
           This is an English to French translation tool uses a Transformer model
           implemented in Pytorch.{" "}

@@ -16,19 +16,28 @@ The Prefect flows are separated into two groups based on if it requires a GPU or
 ### Training flow
 The code is located in mleng-transformer-translation, and requires:
 - GPU with >16gb of ram (alternatively, reduce num_tokens)
-- Make sure cuda version >= 11.8 is installed on host machine
-- Make sure docker and nvidia container toolkit is installed on host machine (https://docs.docker.com/config/containers/resource_constraints/#gpu)
 - To deploy, follow these steps
 
 Set up once:
-1. Log in to Prefect Cloud and provision a serverless push work pool (https://docs.prefect.io/latest/guides/deployment/push-work-pools/)
-2. Install Azure CLI, `az login`, and `az acr login --name [NAME OF CONTAINER REGISTRY]`
+1. Log in to Prefect Cloud
+2. `cd mleng-transformer-translation`
 3. `conda env create -f environment.yml`
-4. `prefect config set PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE=<docker-registry-url>/<organization-or-username>`
+
 To deploy as much as you want:
 1. `conda activate mleng-transformer-translation`
 2. `cd mleng-transformer-translation`
 3. `python3 orchestrate.py` with `AZURE_SQL_CONNECTIONSTRING` as an environment variable
+4. Go into Prefect Cloud and run your deployment!
 
 ### Other flows
-The code is located in prefect-flows, and consist of ...
+The code is located in prefect-flows, and consist of `ping_server.py`, which ensures server uptime.
+Set up once: 
+1. Log in to Prefect Cloud and provision a serverless push work pool (https://docs.prefect.io/latest/guides/deployment/push-work-pools/)
+2. Install Azure CLI, `az login`, and `az acr login --name [NAME OF CONTAINER REGISTRY]`
+3. `cd prefect-flows`
+3. `pip install -r requirements.txt`
+4. `prefect config set PREFECT_DEFAULT_DOCKER_BUILD_NAMESPACE=<docker-registry-url>/<organization-or-username>`
+
+To deploy as much as you want:
+1. `cd prefect-flows`
+2. `python3 ping_server.py`

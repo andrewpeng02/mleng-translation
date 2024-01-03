@@ -40,10 +40,10 @@ def load_best_model():
     model_uri = "models:/transformer-translation@champion"
     version = client.get_model_version_by_alias(
         "transformer-translation", "champion"
-    ).version
-    run_id = client.get_model_version_by_alias(
-        "transformer-translation", "champion"
-    ).run_id
+    )
+    # run_id = client.get_model_version_by_alias(
+    #     "transformer-translation", "champion"
+    # ).run_id
     model_path = mlflow.artifacts.download_artifacts(model_uri, dst_path="model")
     model = torch.jit.load(model_path + "data/model.pth")
 
@@ -65,7 +65,8 @@ def load_best_model():
         "lang_model": lang_model,
         "en_freq_list": en_freq_list,
         "fr_freq_list": fr_freq_list,
-        "version": version,
+        "version": version.version,
+        "last_updated": version.creation_timestamp
     }
 
 

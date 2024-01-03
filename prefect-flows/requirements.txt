@@ -4,3 +4,4 @@ tqdm
 azure-identity 
 sqlalchemy
 pyodbc
+mlflow

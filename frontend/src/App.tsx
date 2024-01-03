@@ -28,7 +28,6 @@ function App() {
   const [feedbackMode, setFeedbackMode] = useState<boolean>(false);
   const [feedbackModeInput, setFeedbackModeInput] = useState<string>("");
   const { isFetching, error, data, refetch } = useQuery({
-    enabled: false,
     retry: false,
     queryKey: ["translation"],
     queryFn: async () => {
@@ -84,7 +83,7 @@ function App() {
   }
 
   return (
-    <div className="bg-slate-100 h-screen">
+    <div>
       <div className="p-4 mb-4 bg-white border-b-2">
         English to French Translation
       </div>
@@ -183,12 +182,14 @@ function App() {
         </div>
       </div>
       <div className="m-4 mt-8 p-4 bg-white rounded-lg">
-        <p className="text-md italic">
+        <p className="text-sm italic">
           Last updated:{" "}
           {data && data.last_updated
             ? new Date(data.last_updated * 1000).toLocaleString()
             : "..."}
         </p>
+      </div>
+      <div className="m-4 mt-8 p-4 bg-white rounded-lg">
         <p className="text-md">
           This is an English to French translation tool uses a Transformer model
           implemented in Pytorch.{" "}

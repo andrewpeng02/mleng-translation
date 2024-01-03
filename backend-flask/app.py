@@ -38,9 +38,7 @@ client = mlflow.MlflowClient()
 
 def load_best_model():
     model_uri = "models:/transformer-translation@champion"
-    version = client.get_model_version_by_alias(
-        "transformer-translation", "champion"
-    )
+    version = client.get_model_version_by_alias("transformer-translation", "champion")
     # run_id = client.get_model_version_by_alias(
     #     "transformer-translation", "champion"
     # ).run_id
@@ -66,7 +64,7 @@ def load_best_model():
         "en_freq_list": en_freq_list,
         "fr_freq_list": fr_freq_list,
         "version": version.version,
-        "last_updated": version.creation_timestamp
+        "last_updated": version.creation_timestamp,
     }
 
 
@@ -134,7 +132,12 @@ def predict_endpoint():
 
     req = request.get_json()
     if "input" not in req:
-        return return_with_error("", "Input must be a valid string")
+        result = {
+            "output": "",
+            "version": model_data["version"],
+            "last_updated": model_data["last_updated"],
+        }
+        return jsonify(result)
     orig_input = req["input"]
 
     input = orig_input.strip()
@@ -188,6 +191,7 @@ def predict_endpoint():
         "output": output_detokenized,
         "version": model_data["version"],
         "time": str(time.time() - st),
+        "last_updated": model_data["last_updated"],
     }
     return jsonify(result)
 

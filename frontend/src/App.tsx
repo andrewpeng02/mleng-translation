@@ -185,7 +185,7 @@ function App() {
         <p className="text-sm italic">
           Last updated:{" "}
           {data && data.last_updated
-            ? new Date(data.last_updated / 1000).toLocaleString()
+            ? new Date(data.last_updated).toLocaleString()
             : "..."}
         </p>
       </div>

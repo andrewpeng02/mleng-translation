@@ -86,7 +86,7 @@ def update_model_if_out_of_date():
         model_data = load_best_model()
 
 
-def return_with_error(input, error, id):
+def return_with_error(input, error, id=None):
     Thread(
         target=insert_into_model_execution,
         kwargs={"id": id, "input": input, "error": error},
@@ -142,7 +142,13 @@ def predict_endpoint():
 
     input = orig_input.strip()
     if len(input) == 0:
-        return return_with_error(orig_input, "Input must be a valid string")
+        result = {
+            "id": id,
+            "output": "",
+            "version": model_data["version"],
+            "last_updated": model_data["last_updated"],
+        }
+        return jsonify(result)
     if len(input) > 3000:
         return return_with_error(orig_input, "Input must have 3000 characters or fewer")
 

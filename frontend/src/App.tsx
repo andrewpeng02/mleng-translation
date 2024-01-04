@@ -183,7 +183,7 @@ function App() {
       </div>
       <div className="m-4 mt-8 p-4 bg-white rounded-lg">
         <p className="text-sm italic">
-          Last updated:{" "}
+          Model last updated:{" "}
           {data && data.last_updated
             ? new Date(data.last_updated).toLocaleString()
             : "..."}

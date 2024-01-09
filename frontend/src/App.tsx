@@ -191,7 +191,7 @@ function App() {
       </div>
       <div className="m-4 mt-8 p-4 bg-white rounded-lg">
         <p className="text-md">
-          This is an English to French translation tool uses a Transformer model
+          This is an English to French translation tool that uses a Transformer model
           implemented in Pytorch.{" "}
         </p>
         <p className="mb-1 mt-4 text-lg">Features</p>

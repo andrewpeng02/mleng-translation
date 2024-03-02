@@ -27,6 +27,7 @@ def main_flow():
         )
     except:
         # retry
+        time.sleep(5)
         version = client.get_model_version_by_alias(
             "transformer-translation", "champion"
         )

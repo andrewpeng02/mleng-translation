@@ -18,7 +18,7 @@ def main_flow():
         "https://translate.andrewpeng.dev/api/predict", json={"input": "Hi"}
     ).json()
     assert "id" in test_data
-    assert test_data["output"] == "Salut."
+    assert test_data["output"] == "Salut!"
 
     client = mlflow.MlflowClient()
     try:

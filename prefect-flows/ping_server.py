@@ -52,5 +52,5 @@ if __name__ == "__main__":
             platform="linux/amd64",
             dockerfile="Dockerfile"
         ),
-        interval=60*60 # run every hour
+        interval=60*60*24 # run every day
     )
